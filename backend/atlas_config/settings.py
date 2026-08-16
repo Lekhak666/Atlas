@@ -19,7 +19,6 @@ env = environ.Env(
     DEBUG=(bool, False),
 )
 
-# .env lives at the Atlas repository root:
 # Atlas/
 # ├── .env
 # └── backend/
@@ -56,6 +55,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
+    # Third-party
+    "rest_framework",
+
+    # Atlas
+    "apps.users",
 ]
 
 
@@ -112,6 +117,18 @@ DATABASES = {
         "PORT": env("DATABASE_PORT", default="5432"),
     }
 }
+
+
+# =============================================================================
+# AUTHENTICATION
+# =============================================================================
+
+# Atlas uses a custom User model.
+#
+# IMPORTANT:
+# Do not run migrations until apps.users.models.User exists.
+
+AUTH_USER_MODEL = "users.User"
 
 
 # =============================================================================
