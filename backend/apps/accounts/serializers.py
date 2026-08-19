@@ -1,7 +1,7 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -94,3 +94,66 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
 
         return user
+
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Authenticate an Atlas user and issue JWT tokens.
+    """
+
+    email = serializers.EmailField(
+        required=True,
+    )
+
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={"input_type": "password"},
+    )
+
+    def validate(self, attrs):
+        email = attrs["email"].strip().lower()
+        password = attrs["password"]
+
+        user = authenticate(
+            request=self.context.get("request"),
+            email=email,
+            password=password,
+        )
+
+        if user is None:
+            raise serializers.ValidationError(
+                "Invalid email or password."
+            )
+
+        if not user.is_active:
+            raise serializers.ValidationError(
+                "This account is inactive."
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            "user": user,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
+
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Serialize the authenticated Atlas user's public identity.
+    """
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "avatar",
+            "bio",
+            "timezone",
+        ]
+        read_only_fields = fields
